@@ -965,6 +965,8 @@
                         <th data-sort="pbr" scope="col" role="columnheader" tabindex="0" aria-sort="none" class="tooltip" data-tooltip="주가순자산비율">PBR</th>
                         <th data-sort="breakout_pct" scope="col" role="columnheader" tabindex="0" aria-sort="none" class="tooltip" data-tooltip="현재가가 이전 52주 고점 대비 상승률">돌파 강도</th>
                         <th data-sort="vs_breakout_close" scope="col" role="columnheader" tabindex="0" aria-sort="none" class="tooltip" data-tooltip="돌파일 종가 대비 현재가 변동">돌파 종가 대비</th>
+                        <th data-sort="breakout_change_pct" scope="col" role="columnheader" tabindex="0" aria-sort="none" class="tooltip" data-tooltip="돌파 당일 전일 대비 등락률">돌파일 등락</th>
+                        <th data-sort="realized_max_gain" scope="col" role="columnheader" tabindex="0" aria-sort="none" class="tooltip" data-tooltip="돌파 이후 실현된 최고 수익률">실현 최고</th>
                         <th data-sort="volume_surge" scope="col" role="columnheader" tabindex="0" aria-sort="none" class="tooltip" data-tooltip="20일 평균 대비 거래량">거래량비</th>
                         <th data-sort="days_since_breakout" scope="col" role="columnheader" tabindex="0" aria-sort="ascending">돌파일</th>
                         <th data-sort="predicted_gain" scope="col" role="columnheader" tabindex="0" aria-sort="none" class="tooltip" data-tooltip="20거래일 내 예상 최고 수익률">예상 최고수익</th>
@@ -973,7 +975,7 @@
                     </tr>
                 </thead>
                 <tbody id="stock-table" role="rowgroup">
-                    <tr role="row"><td colspan="13" class="loading" role="cell">데이터 로딩 중...</td></tr>
+                    <tr role="row"><td colspan="15" class="loading" role="cell">데이터 로딩 중...</td></tr>
                 </tbody>
             </table>
             <!-- 페이지네이션 -->
@@ -1410,6 +1412,8 @@
                     <td class="num ${stock.pbr ? '' : 'na'}">${stock.pbr ? stock.pbr.toFixed(2) : '-'}</td>
                     <td class="num ${breakoutClass}">${stock.breakout_pct >= 0 ? '+' : ''}${stock.breakout_pct}%</td>
                     <td class="num ${vsBreakoutClass}">${stock.vs_breakout_close >= 0 ? '+' : ''}${stock.vs_breakout_close}%</td>
+                    <td class="num ${stock.breakout_change_pct != null ? (stock.breakout_change_pct >= 0 ? 'positive' : 'negative') : 'na'}">${stock.breakout_change_pct != null ? (stock.breakout_change_pct >= 0 ? '+' : '') + stock.breakout_change_pct + '%' : '-'}</td>
+                    <td class="num ${stock.realized_max_gain != null ? (stock.realized_max_gain >= 10 ? 'positive' : stock.realized_max_gain >= 0 ? '' : 'negative') : 'na'}">${stock.realized_max_gain != null ? (stock.realized_max_gain >= 0 ? '+' : '') + stock.realized_max_gain.toFixed(1) + '%' : '-'}</td>
                     <td class="num">${stock.volume_surge.toFixed(1)}x</td>
                     <td><span class="days-badge ${daysClass}">${daysText}</span></td>
                     <td class="num predicted-gain ${gainClass}">${stock.predicted_gain >= 0 ? '+' : ''}${stock.predicted_gain}%</td>

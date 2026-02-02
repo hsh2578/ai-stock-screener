@@ -286,6 +286,22 @@ class AIScreener:
             # 등락률 (전일 대비)
             change_pct = (current_close / prev_close - 1) * 100
 
+            # 돌파일 당시 등락률 (돌파일 전일 대비)
+            if breakout_idx >= 1:
+                breakout_prev_close = close.iloc[breakout_idx - 1]
+                breakout_change_pct = (breakout_close / breakout_prev_close - 1) * 100 if breakout_prev_close else 0
+            else:
+                breakout_change_pct = 0
+
+            # 돌파 이후 실현된 최고 수익률 (돌파 종가 대비 이후 최고가)
+            if breakout_idx < total_len - 1:
+                # 돌파일 다음날부터 현재까지의 최고가
+                post_breakout_high = high.iloc[breakout_idx + 1:].max()
+                realized_max_gain = (post_breakout_high / breakout_close - 1) * 100 if breakout_close else 0
+            else:
+                # 오늘 돌파한 경우 아직 데이터 없음
+                realized_max_gain = None
+
             # 거래량 비율 (돌파일 기준 - 기존 사이트와 동일)
             volume_ratio = round(breakout_volume / avg_vol_20, 1) if avg_vol_20 > 0 else 0
 
@@ -336,6 +352,8 @@ class AIScreener:
                 'low_52w': int(low_52w),
                 'breakout_pct': round(above_high_percent, 2),  # 52주 고가 대비 상승률
                 'vs_breakout_close': round(vs_breakout_close, 2),
+                'breakout_change_pct': round(breakout_change_pct, 2),  # 돌파일 당시 등락률
+                'realized_max_gain': round(realized_max_gain, 2) if realized_max_gain is not None else None,  # 실현 최고수익
                 'volume_surge': volume_ratio,  # 돌파일 거래량 비율 (기존 사이트와 동일)
                 'days_since_breakout': days_since_breakout,
                 'breakout_date': breakout_date_str,  # "2월2일" 형식
