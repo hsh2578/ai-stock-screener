@@ -1280,24 +1280,7 @@
             // 필터 리셋 버튼 상태 업데이트
             updateResetButton();
 
-            // 페이지네이션 적용
-            const totalItems = filtered.length;
-            const totalPages = Math.ceil(totalItems / itemsPerPage);
-
-            // 현재 페이지가 총 페이지 수를 초과하면 조정
-            if (currentPage > totalPages && totalPages > 0) {
-                currentPage = totalPages;
-            }
-
-            // 현재 페이지에 해당하는 데이터만 추출
-            const startIndex = (currentPage - 1) * itemsPerPage;
-            const endIndex = startIndex + itemsPerPage;
-            const paginatedData = filtered.slice(startIndex, endIndex);
-
-            // 페이지네이션 UI 렌더링
-            renderPagination(totalItems);
-
-            // 다중 정렬
+            // 다중 정렬 (페이지네이션 전에 먼저 실행!)
             filtered.sort((a, b) => {
                 for (const criteria of sortCriteria) {
                     let valA = a[criteria.column];
@@ -1322,6 +1305,23 @@
                 }
                 return 0;
             });
+
+            // 페이지네이션 적용 (정렬 후에 실행!)
+            const totalItems = filtered.length;
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+            // 현재 페이지가 총 페이지 수를 초과하면 조정
+            if (currentPage > totalPages && totalPages > 0) {
+                currentPage = totalPages;
+            }
+
+            // 현재 페이지에 해당하는 데이터만 추출
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const paginatedData = filtered.slice(startIndex, endIndex);
+
+            // 페이지네이션 UI 렌더링
+            renderPagination(totalItems);
 
             // 헤더 정렬 표시 및 ARIA 업데이트
             document.querySelectorAll('th[data-sort]').forEach(th => {
