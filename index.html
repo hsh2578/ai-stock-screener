@@ -3,1166 +3,343 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="AI 기반 52주 신고가 돌파 종목 발굴 및 수익률 예측 시스템">
+    <meta name="description" content="AI 기반 주식 종목 발굴 및 수익률 예측 시스템">
     <meta name="theme-color" content="#1a1a3a">
-    <title>AI 종목 발굴 - 52주 신고가 돌파</title>
+    <title>AI 종목 발굴</title>
     <style>
-        /* 접근성: 포커스 스타일 */
-        :focus-visible {
-            outline: 2px solid #8b5cf6;
-            outline-offset: 2px;
-        }
+        :focus-visible { outline: 2px solid #8b5cf6; outline-offset: 2px; }
+        .skip-link { position: absolute; top: -40px; left: 0; background: #8b5cf6; color: #fff; padding: 8px 16px; z-index: 100; text-decoration: none; border-radius: 0 0 4px 0; }
+        .skip-link:focus { top: 0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans KR', sans-serif; background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 100%); color: #e0e0e0; min-height: 100vh; }
+        .header { background: rgba(0, 0, 0, 0.4); padding: 20px 40px; border-bottom: 1px solid rgba(100, 100, 255, 0.2); }
+        .header h1 { font-size: 24px; color: #fff; display: flex; align-items: center; gap: 12px; }
+        .header h1::before { content: ''; display: inline-block; width: 8px; height: 8px; background: #00ff88; border-radius: 50%; box-shadow: 0 0 10px #00ff88; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .header-info { margin-top: 10px; font-size: 14px; color: #888; display: flex; align-items: center; gap: 20px; }
+        .data-time { background: rgba(34, 197, 94, 0.2); color: #4ade80; padding: 4px 12px; border-radius: 6px; font-size: 13px; font-weight: 500; }
+        .container { max-width: 1800px; margin: 0 auto; padding: 30px; }
 
-        /* 스킵 네비게이션 (스크린 리더용) */
-        .skip-link {
-            position: absolute;
-            top: -40px;
-            left: 0;
-            background: #8b5cf6;
-            color: #fff;
-            padding: 8px 16px;
-            z-index: 100;
-            text-decoration: none;
-            border-radius: 0 0 4px 0;
-        }
-        .skip-link:focus {
-            top: 0;
-        }
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        /* 탭 스타일 */
+        .tabs { display: flex; gap: 4px; margin-bottom: 20px; background: rgba(0, 0, 0, 0.3); padding: 6px; border-radius: 12px; }
+        .tab-btn { background: transparent; border: none; color: #888; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s; }
+        .tab-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.05); }
+        .tab-btn.active { background: linear-gradient(135deg, #8b5cf6, #06b6d4); color: #fff; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans KR', sans-serif;
-            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 100%);
-            color: #e0e0e0;
-            min-height: 100vh;
-        }
+        .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 20px; }
+        .stat-card .label { font-size: 13px; color: #888; margin-bottom: 8px; }
+        .stat-card .value { font-size: 28px; font-weight: 700; color: #fff; }
+        .stat-card .sub { font-size: 12px; color: #666; margin-top: 4px; }
 
-        .header {
-            background: rgba(0, 0, 0, 0.4);
-            padding: 20px 40px;
-            border-bottom: 1px solid rgba(100, 100, 255, 0.2);
-        }
+        .info-box { background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(6, 182, 212, 0.1)); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 12px; padding: 20px 24px; margin-bottom: 20px; }
+        .info-box h3 { font-size: 16px; color: #c084fc; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .info-box h3::before { content: '?'; display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; background: rgba(139, 92, 246, 0.3); border-radius: 50%; font-size: 12px; font-weight: 700; }
+        .info-box p { font-size: 14px; line-height: 1.7; color: #a0a0a0; }
+        .info-box .highlight { color: #22c55e; font-weight: 600; }
 
-        .header h1 {
-            font-size: 24px;
-            color: #fff;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
+        .filters { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 20px; margin-bottom: 20px; display: flex; gap: 20px; flex-wrap: wrap; align-items: center; }
+        .filter-group { display: flex; align-items: center; gap: 10px; }
+        .filter-group label { font-size: 13px; color: #a0a0a0; }
+        .filter-group select, .filter-group input { background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.2); color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 14px; }
+        .filter-reset { background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; padding: 8px 16px; border-radius: 6px; font-size: 13px; cursor: pointer; margin-left: auto; }
+        .filter-result-count { font-size: 13px; color: #a0a0a0; padding: 8px 12px; background: rgba(139, 92, 246, 0.1); border-radius: 6px; }
+        .filter-result-count strong { color: #c084fc; }
 
-        .header h1::before {
-            content: '';
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            background: #00ff88;
-            border-radius: 50%;
-            box-shadow: 0 0 10px #00ff88;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        .header-info {
-            margin-top: 10px;
-            font-size: 14px;
-            color: #888;
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .data-time {
-            background: rgba(34, 197, 94, 0.2);
-            color: #4ade80;
-            padding: 4px 12px;
-            border-radius: 6px;
-            font-size: 13px;
-            font-weight: 500;
-        }
-
-        .sort-help {
-            font-size: 12px;
-            color: #666;
-            margin-left: auto;
-        }
-
-        .sort-help kbd {
-            background: rgba(255,255,255,0.1);
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 11px;
-        }
-
-        .container {
-            max-width: 1800px;
-            margin: 0 auto;
-            padding: 30px;
-        }
-
-        .stats-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .stat-card {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 20px;
-        }
-
-        .stat-card .label {
-            font-size: 13px;
-            color: #888;
-            margin-bottom: 8px;
-        }
-
-        .stat-card .value {
-            font-size: 28px;
-            font-weight: 700;
-            color: #fff;
-        }
-
-        .stat-card .sub {
-            font-size: 12px;
-            color: #666;
-            margin-top: 4px;
-        }
-
-        /* 성공확률 설명 박스 */
-        .info-box {
-            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(6, 182, 212, 0.1));
-            border: 1px solid rgba(139, 92, 246, 0.3);
-            border-radius: 12px;
-            padding: 20px 24px;
-            margin-bottom: 20px;
-        }
-
-        .info-box h3 {
-            font-size: 16px;
-            color: #c084fc;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .info-box h3::before {
-            content: '?';
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 20px;
-            height: 20px;
-            background: rgba(139, 92, 246, 0.3);
-            border-radius: 50%;
-            font-size: 12px;
-            font-weight: 700;
-        }
-
-        .info-box p {
-            font-size: 14px;
-            line-height: 1.7;
-            color: #a0a0a0;
-        }
-
-        .info-box .highlight {
-            color: #22c55e;
-            font-weight: 600;
-        }
-
-        .info-box .metrics {
-            display: flex;
-            gap: 30px;
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .info-box .metric {
-            text-align: center;
-        }
-
-        .info-box .metric .val {
-            font-size: 20px;
-            font-weight: 700;
-            color: #fff;
-        }
-
-        .info-box .metric .desc {
-            font-size: 11px;
-            color: #888;
-            margin-top: 4px;
-        }
-
-        .filters {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-
-        .filter-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .filter-group label {
-            font-size: 13px;
-            color: #a0a0a0; /* 접근성: 대비 개선 4.5:1 */
-        }
-
-        .filter-group select, .filter-group input {
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: #fff;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 14px;
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-
-        .filter-group select:hover, .filter-group input:hover {
-            border-color: rgba(139, 92, 246, 0.5);
-        }
-
-        .filter-group select:focus, .filter-group input:focus {
-            border-color: #8b5cf6;
-            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
-            outline: none;
-        }
-
-        /* 필터 초기화 버튼 */
-        .filter-reset {
-            background: rgba(239, 68, 68, 0.2);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            color: #f87171;
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-size: 13px;
-            cursor: pointer;
-            transition: all 0.2s;
-            margin-left: auto;
-        }
-
-        .filter-reset:hover {
-            background: rgba(239, 68, 68, 0.3);
-            border-color: rgba(239, 68, 68, 0.5);
-        }
-
-        .filter-reset:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
-
-        /* 결과 개수 표시 */
-        .filter-result-count {
-            font-size: 13px;
-            color: #a0a0a0;
-            padding: 8px 12px;
-            background: rgba(139, 92, 246, 0.1);
-            border-radius: 6px;
-        }
-
-        .filter-result-count strong {
-            color: #c084fc;
-        }
-
-        .table-container {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            overflow-x: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            min-width: 1400px;
-        }
-
-        th {
-            background: rgba(0, 0, 0, 0.8);
-            padding: 14px 12px;
-            text-align: left;
-            font-size: 12px;
-            font-weight: 600;
-            color: #a0a0a0; /* 접근성: 대비 개선 */
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            white-space: nowrap;
-            cursor: pointer;
-            user-select: none;
-            /* 테이블 헤더 고정 */
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            transition: background 0.2s, color 0.2s;
-        }
-
-        th:hover {
-            color: #fff;
-            background: rgba(100, 100, 255, 0.4);
-        }
-
-        th[aria-sort] {
-            padding-right: 24px;
-        }
-
-        /* 키보드 네비게이션 시각적 피드백 */
-        th:focus-visible {
-            background: rgba(100, 100, 255, 0.4);
-            color: #fff;
-        }
-
+        .table-container { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 1200px; }
+        th { background: rgba(0, 0, 0, 0.8); padding: 14px 12px; text-align: left; font-size: 12px; font-weight: 600; color: #a0a0a0; border-bottom: 1px solid rgba(255, 255, 255, 0.1); white-space: nowrap; cursor: pointer; user-select: none; position: sticky; top: 0; z-index: 10; transition: background 0.2s, color 0.2s; }
+        th:hover { color: #fff; background: rgba(100, 100, 255, 0.4); }
         th .sort-indicator { color: #00ff88; margin-left: 4px; }
-        th .sort-order { font-size: 9px; color: #888; margin-left: 2px; }
-
-        td {
-            padding: 12px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            font-size: 13px;
-        }
-
-        tr:hover {
-            background: rgba(100, 100, 255, 0.1);
-        }
-
-        .stock-name {
-            font-weight: 600;
-            color: #fff;
-            cursor: pointer;
-            transition: color 0.2s;
-        }
-
-        .stock-name:hover {
-            color: #60a5fa;
-            text-decoration: underline;
-        }
-
-        .stock-code {
-            font-size: 11px;
-            color: #666;
-            margin-left: 6px;
-        }
-
-        .market-badge {
-            font-size: 9px;
-            padding: 1px 4px;
-            border-radius: 3px;
-            margin-left: 4px;
-            vertical-align: middle;
-        }
-
+        td { padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); font-size: 13px; }
+        tr:hover { background: rgba(100, 100, 255, 0.1); }
+        .stock-name { font-weight: 600; color: #fff; cursor: pointer; transition: color 0.2s; }
+        .stock-name:hover { color: #60a5fa; text-decoration: underline; }
+        .stock-code { font-size: 11px; color: #666; margin-left: 6px; }
+        .market-badge { font-size: 9px; padding: 1px 4px; border-radius: 3px; margin-left: 4px; }
         .market-kospi { background: rgba(59, 130, 246, 0.3); color: #93c5fd; }
         .market-kosdaq { background: rgba(168, 85, 247, 0.3); color: #d8b4fe; }
-
-        .market-tag {
-            display: inline-block;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 10px;
-            font-weight: 600;
-        }
-
-        .market-kospi { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
-        .market-kosdaq { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
-
-        .num {
-            font-family: 'JetBrains Mono', 'Consolas', monospace;
-            text-align: right;
-        }
-
+        .num { font-family: 'JetBrains Mono', 'Consolas', monospace; text-align: right; }
         .pct-positive { color: #ef4444; }
         .pct-negative { color: #3b82f6; }
         .pct-zero { color: #888; }
 
-        .predicted-gain {
-            font-weight: 700;
-        }
-
-        .probability-bar {
-            width: 80px;
-            height: 22px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 4px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .probability-fill {
-            height: 100%;
-            transition: width 0.3s ease;
-        }
-
-        .probability-text {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 11px;
-            font-weight: 600;
-            color: #fff;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-        }
-
+        .probability-bar { width: 80px; height: 22px; background: rgba(255, 255, 255, 0.1); border-radius: 4px; overflow: hidden; position: relative; }
+        .probability-fill { height: 100%; transition: width 0.3s ease; }
+        .probability-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 11px; font-weight: 600; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
         .prob-high .probability-fill { background: linear-gradient(90deg, #22c55e, #16a34a); }
         .prob-medium .probability-fill { background: linear-gradient(90deg, #eab308, #ca8a04); }
         .prob-low .probability-fill { background: linear-gradient(90deg, #64748b, #475569); }
 
-        .recommendation {
-            display: inline-block;
-            padding: 3px 10px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: 700;
-        }
-
+        .recommendation { display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 11px; font-weight: 700; }
         .rec-buy { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
         .rec-hold { background: rgba(234, 179, 8, 0.2); color: #eab308; }
         .rec-pass { background: rgba(100, 116, 139, 0.2); color: #94a3b8; }
 
-        .days-badge {
-            display: inline-block;
-            padding: 3px 10px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: 600;
-            white-space: nowrap;
-        }
-
+        .days-badge { display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; white-space: nowrap; }
         .days-0 { background: rgba(239, 68, 68, 0.3); color: #fca5a5; }
         .days-recent { background: rgba(234, 179, 8, 0.2); color: #fcd34d; }
         .days-old { background: rgba(100, 116, 139, 0.2); color: #94a3b8; }
 
-        .model-info {
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 20px;
-            margin-top: 30px;
-        }
+        .loading { text-align: center; padding: 60px; color: #888; }
+        .no-data { text-align: center; padding: 60px; color: #666; }
+        .footer { text-align: center; padding: 30px; color: #555; font-size: 13px; }
+        .na { color: #666; }
 
-        .model-info h3 {
-            font-size: 16px;
-            color: #fff;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+        .pagination { display: flex; justify-content: center; align-items: center; gap: 6px; padding: 16px 20px; background: rgba(0, 0, 0, 0.3); border-top: 1px solid rgba(255, 255, 255, 0.1); border-radius: 0 0 12px 12px; flex-wrap: wrap; }
+        .pagination-btn { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.2); color: #a0a0a0; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.15s; min-width: 40px; }
+        .pagination-btn:hover:not(:disabled) { background: rgba(139, 92, 246, 0.2); border-color: rgba(139, 92, 246, 0.5); color: #fff; }
+        .pagination-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .pagination-btn.active { background: linear-gradient(135deg, #8b5cf6, #06b6d4); border-color: transparent; color: #fff; font-weight: 700; }
+        .pagination-info { color: #888; font-size: 13px; margin: 0 8px; }
 
-        .model-info h3::before {
-            content: 'AI';
-            background: linear-gradient(135deg, #8b5cf6, #06b6d4);
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: 700;
-        }
-
-        .model-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 15px;
-        }
-
-        .model-stat {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 12px;
-            border-radius: 8px;
-        }
-
-        .model-stat .label {
-            font-size: 12px;
-            color: #888;
-        }
-
-        .model-stat .value {
-            font-size: 18px;
-            font-weight: 600;
-            color: #fff;
-            margin-top: 4px;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 60px;
-            color: #888;
-        }
-
-        .loading::before {
-            content: '';
-            display: inline-block;
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(255,255,255,0.1);
-            border-top-color: #8b5cf6;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .no-data {
-            text-align: center;
-            padding: 60px;
-            color: #666;
-        }
-
-        .footer {
-            text-align: center;
-            padding: 30px;
-            color: #555;
-            font-size: 13px;
-        }
-
-        .na { color: #666; } /* 접근성: 대비 개선 */
-
-        /* 툴팁 */
-        .tooltip {
-            position: relative;
-        }
-
-        .tooltip::after {
-            content: attr(data-tooltip);
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.9);
-            color: #fff;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 12px;
-            white-space: nowrap;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.2s, visibility 0.2s;
-            z-index: 100;
-            pointer-events: none;
-        }
-
-        .tooltip:hover::after,
-        .tooltip:focus::after {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        /* 토스트 알림 */
-        .toast-container {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .toast {
-            background: rgba(34, 197, 94, 0.95);
-            color: #fff;
-            padding: 12px 20px;
-            border-radius: 8px;
-            font-size: 14px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-            animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s forwards;
-        }
-
-        .toast.error {
-            background: rgba(239, 68, 68, 0.95);
-        }
-
-        .toast.info {
-            background: rgba(59, 130, 246, 0.95);
-        }
-
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-
-        @keyframes fadeOut {
-            to { opacity: 0; transform: translateX(100%); }
-        }
-
-        /* 키보드 단축키 안내 */
-        .keyboard-hint {
-            display: none;
-            position: fixed;
-            bottom: 24px;
-            left: 24px;
-            background: rgba(0, 0, 0, 0.8);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            padding: 16px;
-            font-size: 12px;
-            color: #a0a0a0;
-            z-index: 100;
-        }
-
-        .keyboard-hint.show {
-            display: block;
-            animation: fadeIn 0.2s ease;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        .keyboard-hint kbd {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 2px 6px;
-            border-radius: 4px;
-            margin-right: 4px;
-        }
-
-        .keyboard-hint ul {
-            list-style: none;
-            margin: 0;
-            padding: 0;
-        }
-
-        .keyboard-hint li {
-            margin: 6px 0;
-        }
-
-        /* 진행 표시줄 */
-        .progress-bar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            height: 3px;
-            background: linear-gradient(90deg, #8b5cf6, #06b6d4);
-            z-index: 1001;
-            transition: width 0.3s ease;
-        }
-
-        /* 반응형 개선 */
-        @media (max-width: 1200px) {
-            .container {
-                padding: 20px 15px;
-            }
-            .stats-row {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            .filters {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            .filter-group {
-                justify-content: space-between;
-            }
-            .filter-reset {
-                margin-left: 0;
-                margin-top: 10px;
-            }
-        }
+        .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 1000; display: flex; flex-direction: column; gap: 8px; }
+        .toast { background: rgba(34, 197, 94, 0.95); color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 14px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s forwards; }
+        .toast.info { background: rgba(59, 130, 246, 0.95); }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes fadeOut { to { opacity: 0; transform: translateX(100%); } }
 
         @media (max-width: 768px) {
-            .header {
-                padding: 15px 20px;
-            }
-            .header h1 {
-                font-size: 18px;
-            }
-            .stats-row {
-                grid-template-columns: 1fr;
-                gap: 12px;
-            }
-            .stat-card {
-                padding: 15px;
-            }
-            .stat-card .value {
-                font-size: 24px;
-            }
-            .info-box .metrics {
-                flex-direction: column;
-                gap: 15px;
-            }
-            .sort-help {
-                display: none;
-            }
-        }
-
-        /* 고대비 모드 지원 */
-        @media (prefers-contrast: high) {
-            .stat-card, .info-box, .filters, .table-container {
-                border-width: 2px;
-            }
-            th, td {
-                border-bottom-width: 2px;
-            }
-        }
-
-        /* 모션 감소 선호 */
-        @media (prefers-reduced-motion: reduce) {
-            *, *::before, *::after {
-                animation-duration: 0.01ms !important;
-                transition-duration: 0.01ms !important;
-            }
-        }
-
-        /* 스크린 리더 전용 텍스트 */
-        .sr-only {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            padding: 0;
-            margin: -1px;
-            overflow: hidden;
-            clip: rect(0, 0, 0, 0);
-            white-space: nowrap;
-            border: 0;
-        }
-
-        /* ============================================================
-           PAGINATION
-           ============================================================ */
-        .pagination {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 6px;
-            padding: 16px 20px;
-            background: rgba(0, 0, 0, 0.3);
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 0 0 12px 12px;
-            flex-wrap: wrap;
-        }
-
-        .pagination-btn {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: #a0a0a0;
-            padding: 8px 14px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 500;
-            transition: all 0.15s;
-            min-width: 40px;
-        }
-
-        .pagination-btn:hover:not(:disabled) {
-            background: rgba(139, 92, 246, 0.2);
-            border-color: rgba(139, 92, 246, 0.5);
-            color: #fff;
-        }
-
-        .pagination-btn:focus-visible {
-            outline: 2px solid #8b5cf6;
-            outline-offset: 2px;
-        }
-
-        .pagination-btn:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
-
-        .pagination-btn.active {
-            background: linear-gradient(135deg, #8b5cf6, #06b6d4);
-            border-color: transparent;
-            color: #fff;
-            font-weight: 700;
-        }
-
-        .pagination-info {
-            color: #888;
-            font-size: 13px;
-            margin: 0 8px;
-        }
-
-        .pagination-nav {
-            display: flex;
-            gap: 4px;
-        }
-
-        /* 페이지 크기 선택 */
-        .page-size-selector {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-left: 16px;
-            padding-left: 16px;
-            border-left: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .page-size-selector label {
-            font-size: 12px;
-            color: #888;
-        }
-
-        .page-size-selector select {
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: #fff;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-        }
-
-        @media (max-width: 768px) {
-            .pagination {
-                padding: 12px;
-                gap: 4px;
-            }
-            .pagination-btn {
-                min-width: 36px;
-                padding: 6px 10px;
-                font-size: 12px;
-            }
-            .pagination-info {
-                font-size: 11px;
-                margin: 0 4px;
-            }
-            .page-size-selector {
-                display: none;
-            }
+            .header { padding: 15px 20px; }
+            .header h1 { font-size: 18px; }
+            .container { padding: 20px 15px; }
+            .stats-row { grid-template-columns: 1fr; gap: 12px; }
+            .tabs { flex-wrap: wrap; }
+            .tab-btn { padding: 10px 16px; font-size: 13px; }
         }
     </style>
 </head>
 <body>
-    <!-- 접근성: 스킵 네비게이션 -->
     <a href="#stock-table" class="skip-link">메인 테이블로 이동</a>
+    <div class="toast-container" id="toast-container"></div>
 
-    <!-- 진행 표시줄 -->
-    <div class="progress-bar" id="progress-bar" style="width: 0%; display: none;" role="progressbar" aria-label="데이터 로딩 진행률"></div>
-
-    <!-- 토스트 알림 컨테이너 -->
-    <div class="toast-container" id="toast-container" aria-live="polite"></div>
-
-    <header class="header" role="banner">
+    <header class="header">
         <h1>AI 종목 발굴</h1>
         <div class="header-info">
-            <span>52주 신고가 돌파 종목 + ML 기반 수익률 예측</span>
-            <span class="data-time" id="updated-at" aria-live="polite">데이터 로딩중...</span>
-            <span class="sort-help" aria-hidden="true"><kbd>Shift</kbd>+클릭: 다중정렬 | <kbd>?</kbd> 단축키 도움말</span>
+            <span id="header-desc">52주 신고가 돌파 종목 + ML 기반 수익률 예측</span>
+            <span class="data-time" id="updated-at">데이터 로딩중...</span>
         </div>
     </header>
 
-    <main class="container" role="main">
-        <div class="stats-row" role="region" aria-label="통계 요약">
-            <div class="stat-card">
-                <div class="label">발굴된 종목</div>
-                <div class="value" id="total-count">-</div>
-                <div class="sub">52주 신고가 돌파</div>
+    <main class="container">
+        <!-- 탭 -->
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="high52w" onclick="switchTab('high52w')">52주 신고가 돌파</button>
+            <button class="tab-btn" data-tab="boxbreakout" onclick="switchTab('boxbreakout')">박스권 돌파 (거래량 무관)</button>
+        </div>
+
+        <!-- 52주 신고가 탭 -->
+        <div id="tab-high52w" class="tab-content active">
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="label">발굴된 종목</div>
+                    <div class="value" id="total-count-52w">-</div>
+                    <div class="sub">52주 신고가 돌파</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">BUY 추천</div>
+                    <div class="value" id="buy-count-52w">-</div>
+                    <div class="sub">성공확률 60%+ & 예상수익 10%+</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">평균 예상 수익률</div>
+                    <div class="value" id="avg-gain-52w">-</div>
+                    <div class="sub">회귀 모델 예측</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">평균 성공 확률</div>
+                    <div class="value" id="avg-prob-52w">-</div>
+                    <div class="sub">10% 이상 상승 확률</div>
+                </div>
             </div>
-            <div class="stat-card">
-                <div class="label">BUY 추천</div>
-                <div class="value" id="buy-count">-</div>
-                <div class="sub">성공확률 60%+ & 예상수익 10%+</div>
+
+            <div class="info-box">
+                <h3>성공 확률이란?</h3>
+                <p>52주 신고가 돌파 후 <span class="highlight">20거래일 내 최고가가 돌파 시점 대비 10% 이상 상승</span>할 확률입니다.</p>
             </div>
-            <div class="stat-card">
-                <div class="label">평균 예상 수익률</div>
-                <div class="value" id="avg-gain">-</div>
-                <div class="sub">회귀 모델 예측</div>
+
+            <div class="filters">
+                <div class="filter-group">
+                    <label>시장:</label>
+                    <select id="filter-market-52w" onchange="renderTable52w()">
+                        <option value="all">전체</option>
+                        <option value="KOSPI">KOSPI</option>
+                        <option value="KOSDAQ">KOSDAQ</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>추천:</label>
+                    <select id="filter-rec-52w" onchange="renderTable52w()">
+                        <option value="all">전체</option>
+                        <option value="BUY">BUY</option>
+                        <option value="HOLD">HOLD</option>
+                        <option value="PASS">PASS</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>최소 성공확률:</label>
+                    <input type="number" id="filter-prob-52w" value="0" min="0" max="100" style="width: 70px;" onchange="renderTable52w()">%
+                </div>
+                <span class="filter-result-count" id="filter-result-count-52w">검색 결과: <strong>-</strong>개</span>
+                <button class="filter-reset" onclick="resetFilters52w()">필터 초기화</button>
             </div>
-            <div class="stat-card">
-                <div class="label">평균 성공 확률</div>
-                <div class="value" id="avg-prob">-</div>
-                <div class="sub">10% 이상 상승 확률</div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th data-sort="name" onclick="sort52w('name')">종목명</th>
+                            <th data-sort="close" onclick="sort52w('close')">현재가</th>
+                            <th data-sort="change_pct" onclick="sort52w('change_pct')">등락률</th>
+                            <th data-sort="marcap" onclick="sort52w('marcap')">시가총액</th>
+                            <th data-sort="per" onclick="sort52w('per')">PER</th>
+                            <th data-sort="pbr" onclick="sort52w('pbr')">PBR</th>
+                            <th data-sort="breakout_pct" onclick="sort52w('breakout_pct')">돌파 강도</th>
+                            <th data-sort="vs_breakout_close" onclick="sort52w('vs_breakout_close')">돌파종가대비</th>
+                            <th data-sort="volume_surge" onclick="sort52w('volume_surge')">거래량비</th>
+                            <th data-sort="days_since_breakout" onclick="sort52w('days_since_breakout')">돌파일<span class="sort-indicator">▲</span></th>
+                            <th data-sort="predicted_gain" onclick="sort52w('predicted_gain')">예상수익</th>
+                            <th data-sort="success_probability" onclick="sort52w('success_probability')">성공확률</th>
+                            <th data-sort="recommendation" onclick="sort52w('recommendation')">추천</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stock-table-52w">
+                        <tr><td colspan="13" class="loading">데이터 로딩 중...</td></tr>
+                    </tbody>
+                </table>
+                <div id="pagination-52w" class="pagination"></div>
             </div>
         </div>
 
-        <!-- 성공확률 설명 -->
-        <div class="info-box">
-            <h3>성공 확률이란?</h3>
-            <p>
-                52주 신고가 돌파 후 <span class="highlight">20거래일 내 최고가가 돌파 시점 대비 10% 이상 상승</span>할 확률입니다.<br>
-                과거 3년간(2022~2025) 약 4,000건의 52주 신고가 돌파 사례를 학습한 LightGBM 분류 모델이 예측합니다.<br>
-                돌파 강도, 거래량, 변동성, 시장 상황 등 14개 피처를 분석하여 산출됩니다.
-            </p>
-            <div class="metrics">
-                <div class="metric">
-                    <div class="val" id="model-precision-display">-</div>
-                    <div class="desc">모델 Precision<br>(예측 적중률)</div>
+        <!-- 박스권 돌파 탭 -->
+        <div id="tab-boxbreakout" class="tab-content">
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="label">발굴된 종목</div>
+                    <div class="value" id="total-count-box">-</div>
+                    <div class="sub">박스권 돌파</div>
                 </div>
-                <div class="metric">
-                    <div class="val" id="model-samples-display">-</div>
-                    <div class="desc">학습 샘플 수</div>
+                <div class="stat-card">
+                    <div class="label">BUY 추천</div>
+                    <div class="value" id="buy-count-box">-</div>
+                    <div class="sub">성공확률 60%+ & 예상수익 10%+</div>
                 </div>
-                <div class="metric">
-                    <div class="val" id="baseline-rate">~40%</div>
-                    <div class="desc">기준 성공률<br>(무작위 선택시)</div>
+                <div class="stat-card">
+                    <div class="label">평균 AI 점수</div>
+                    <div class="value" id="avg-ai-box">-</div>
+                    <div class="sub">성공확률×0.7 + 수익점수×0.3</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">평균 성공 확률</div>
+                    <div class="value" id="avg-prob-box">-</div>
+                    <div class="sub">15% 이상 상승 확률</div>
                 </div>
             </div>
-        </div>
 
-        <div class="filters" role="search" aria-label="종목 필터">
-            <div class="filter-group">
-                <label for="filter-market">시장:</label>
-                <select id="filter-market" aria-describedby="filter-help">
-                    <option value="all">전체</option>
-                    <option value="KOSPI">KOSPI</option>
-                    <option value="KOSDAQ">KOSDAQ</option>
-                </select>
+            <div class="info-box">
+                <h3>박스권 돌파란?</h3>
+                <p>60거래일 이상 횡보하던 종목이 <span class="highlight">박스권 상단(저항선)을 돌파</span>한 종목입니다.<br>
+                성공확률: 돌파 후 20거래일 내 <span class="highlight">15% 이상 상승</span>할 확률 (XGBoost 분류 모델)</p>
             </div>
-            <div class="filter-group">
-                <label for="filter-rec">추천:</label>
-                <select id="filter-rec">
-                    <option value="all">전체</option>
-                    <option value="BUY">BUY</option>
-                    <option value="HOLD">HOLD</option>
-                    <option value="PASS">PASS</option>
-                </select>
-            </div>
-            <div class="filter-group">
-                <label for="filter-prob">최소 성공확률:</label>
-                <input type="number" id="filter-prob" value="0" min="0" max="100" style="width: 70px;" aria-label="최소 성공확률 퍼센트">
-                <span aria-hidden="true">%</span>
-            </div>
-            <div class="filter-group">
-                <label for="filter-days">돌파 후:</label>
-                <select id="filter-days">
-                    <option value="all">전체</option>
-                    <option value="0">오늘 (D+0)</option>
-                    <option value="1">1일 이내</option>
-                    <option value="3">3일 이내</option>
-                    <option value="5">5일 이내</option>
-                </select>
-            </div>
-            <span class="filter-result-count" id="filter-result-count" aria-live="polite">
-                검색 결과: <strong>-</strong>개
-            </span>
-            <button type="button" class="filter-reset" id="filter-reset" aria-label="모든 필터 초기화">
-                필터 초기화
-            </button>
-            <span id="filter-help" class="sr-only">필터를 변경하면 테이블이 자동으로 업데이트됩니다</span>
-        </div>
 
-        <div class="table-container" role="region" aria-label="종목 리스트" tabindex="0">
-            <table role="grid" aria-describedby="table-caption">
-                <caption id="table-caption" class="sr-only">52주 신고가 돌파 종목 목록. 헤더를 클릭하여 정렬할 수 있습니다.</caption>
-                <thead>
-                    <tr role="row">
-                        <th data-sort="name" scope="col" role="columnheader" tabindex="0" aria-sort="none" class="tooltip" data-tooltip="종목명 클릭 시 차트 보기">종목명</th>
-                        <th data-sort="close" scope="col" role="columnheader" tabindex="0" aria-sort="none">현재가</th>
-                        <th data-sort="change_pct" scope="col" role="columnheader" tabindex="0" aria-sort="none" class="tooltip" data-tooltip="전일 대비 등락률">등락률</th>
-                        <th data-sort="marcap" scope="col" role="columnheader" tabindex="0" aria-sort="none">시가총액</th>
-                        <th data-sort="per" scope="col" role="columnheader" tabindex="0" aria-sort="none" class="tooltip" data-tooltip="주가수익비율">PER</th>
-                        <th data-sort="pbr" scope="col" role="columnheader" tabindex="0" aria-sort="none" class="tooltip" data-tooltip="주가순자산비율">PBR</th>
-                        <th data-sort="breakout_pct" scope="col" role="columnheader" tabindex="0" aria-sort="none" class="tooltip" data-tooltip="현재가가 이전 52주 고점 대비 상승률">돌파 강도</th>
-                        <th data-sort="vs_breakout_close" scope="col" role="columnheader" tabindex="0" aria-sort="none" class="tooltip" data-tooltip="돌파일 종가 대비 현재가 변동">돌파 종가 대비</th>
-                        <th data-sort="breakout_change_pct" scope="col" role="columnheader" tabindex="0" aria-sort="none" class="tooltip" data-tooltip="돌파 당일 전일 대비 등락률">돌파일 등락</th>
-                        <th data-sort="realized_max_gain" scope="col" role="columnheader" tabindex="0" aria-sort="none" class="tooltip" data-tooltip="돌파 이후 실현된 최고 수익률">실현 최고</th>
-                        <th data-sort="volume_surge" scope="col" role="columnheader" tabindex="0" aria-sort="none" class="tooltip" data-tooltip="20일 평균 대비 거래량">거래량비</th>
-                        <th data-sort="days_since_breakout" scope="col" role="columnheader" tabindex="0" aria-sort="ascending">돌파일</th>
-                        <th data-sort="predicted_gain" scope="col" role="columnheader" tabindex="0" aria-sort="none" class="tooltip" data-tooltip="20거래일 내 예상 최고 수익률">예상 최고수익</th>
-                        <th data-sort="success_probability" scope="col" role="columnheader" tabindex="0" aria-sort="none" class="tooltip" data-tooltip="돌파 종가 대비 10% 이상 상승 확률">성공 확률</th>
-                        <th data-sort="recommendation" scope="col" role="columnheader" tabindex="0" aria-sort="none">추천</th>
-                    </tr>
-                </thead>
-                <tbody id="stock-table" role="rowgroup">
-                    <tr role="row"><td colspan="15" class="loading" role="cell">데이터 로딩 중...</td></tr>
-                </tbody>
-            </table>
-            <!-- 페이지네이션 -->
-            <div id="pagination" class="pagination" role="navigation" aria-label="페이지 네비게이션"></div>
-        </div>
+            <div class="filters">
+                <div class="filter-group">
+                    <label>시장:</label>
+                    <select id="filter-market-box" onchange="renderTableBox()">
+                        <option value="all">전체</option>
+                        <option value="KOSPI">KOSPI</option>
+                        <option value="KOSDAQ">KOSDAQ</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>추천:</label>
+                    <select id="filter-rec-box" onchange="renderTableBox()">
+                        <option value="all">전체</option>
+                        <option value="BUY">BUY</option>
+                        <option value="HOLD">HOLD</option>
+                        <option value="PASS">PASS</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>최소 AI점수:</label>
+                    <input type="number" id="filter-ai-box" value="0" min="0" max="100" style="width: 70px;" onchange="renderTableBox()">
+                </div>
+                <span class="filter-result-count" id="filter-result-count-box">검색 결과: <strong>-</strong>개</span>
+                <button class="filter-reset" onclick="resetFiltersBox()">필터 초기화</button>
+            </div>
 
-        <div class="model-info" id="model-info" style="display: none;">
-            <h3>모델 정보</h3>
-            <div class="model-stats">
-                <div class="model-stat">
-                    <div class="label">학습 샘플 수</div>
-                    <div class="value" id="model-samples">-</div>
-                </div>
-                <div class="model-stat">
-                    <div class="label">회귀 모델 R²</div>
-                    <div class="value" id="model-r2">-</div>
-                </div>
-                <div class="model-stat">
-                    <div class="label">분류 Precision</div>
-                    <div class="value" id="model-precision">-</div>
-                </div>
-                <div class="model-stat">
-                    <div class="label">모델 학습일</div>
-                    <div class="value" id="model-trained">-</div>
-                </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th data-sort="name" onclick="sortBox('name')">종목명</th>
+                            <th data-sort="close" onclick="sortBox('close')">현재가</th>
+                            <th data-sort="change_pct" onclick="sortBox('change_pct')">등락률</th>
+                            <th data-sort="marcap" onclick="sortBox('marcap')">시가총액</th>
+                            <th data-sort="per" onclick="sortBox('per')">PER</th>
+                            <th data-sort="pbr" onclick="sortBox('pbr')">PBR</th>
+                            <th data-sort="ai_score" onclick="sortBox('ai_score')">AI점수<span class="sort-indicator">▼</span></th>
+                            <th data-sort="success_probability" onclick="sortBox('success_probability')">성공확률</th>
+                            <th data-sort="predicted_gain" onclick="sortBox('predicted_gain')">예상수익</th>
+                            <th data-sort="days_since_breakout" onclick="sortBox('days_since_breakout')">돌파일</th>
+                            <th data-sort="gain_since_breakout" onclick="sortBox('gain_since_breakout')">돌파후등락</th>
+                            <th data-sort="recommendation" onclick="sortBox('recommendation')">추천</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stock-table-box">
+                        <tr><td colspan="12" class="loading">데이터 로딩 중...</td></tr>
+                    </tbody>
+                </table>
+                <div id="pagination-box" class="pagination"></div>
             </div>
         </div>
     </main>
 
-    <footer class="footer" role="contentinfo">
-        AI 종목 발굴 시스템 | LightGBM 기반 머신러닝 예측
+    <footer class="footer">
+        AI 종목 발굴 시스템 | ML 기반 머신러닝 예측
     </footer>
 
-    <!-- 키보드 단축키 안내 -->
-    <div class="keyboard-hint" id="keyboard-hint" role="dialog" aria-label="키보드 단축키">
-        <strong>키보드 단축키</strong>
-        <ul>
-            <li><kbd>?</kbd> 이 도움말 표시/숨기기</li>
-            <li><kbd>R</kbd> 필터 초기화</li>
-            <li><kbd>F</kbd> 필터 영역으로 이동</li>
-            <li><kbd>T</kbd> 테이블로 이동</li>
-            <li><kbd>←</kbd> <kbd>→</kbd> 이전/다음 페이지</li>
-            <li><kbd>Esc</kbd> 도움말 닫기</li>
-        </ul>
-    </div>
-
     <script>
-        let allStocks = [];
-        // 다중 정렬 지원: [{column: 'col', direction: 'asc'}, ...]
-        let sortCriteria = [{column: 'days_since_breakout', direction: 'asc'}];
-        // 컬럼별 클릭 횟수 추적 (3번 클릭 시 리셋용)
-        let columnClickCount = {};
+        // 데이터
+        let stocks52w = [];
+        let stocksBox = [];
 
-        // 페이지네이션 상태
-        let currentPage = 1;
-        let itemsPerPage = 30;
+        // 정렬 상태
+        let sort52wState = { column: 'days_since_breakout', direction: 'asc' };
+        let sortBoxState = { column: 'ai_score', direction: 'desc' };
 
-        // 페이지 이동 함수
-        function goToPage(page) {
-            currentPage = page;
-            renderTable();
-            // 테이블 상단으로 스크롤
-            document.querySelector('.table-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // 페이지네이션
+        let page52w = 1;
+        let pageBox = 1;
+        const itemsPerPage = 30;
+
+        // 탭 전환
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+
+            // 헤더 설명 변경
+            const desc = document.getElementById('header-desc');
+            if (tabId === 'high52w') {
+                desc.textContent = '52주 신고가 돌파 종목 + ML 기반 수익률 예측';
+            } else {
+                desc.textContent = '박스권 돌파 (거래량 무관) + ML 기반 수익률 예측';
+            }
         }
 
-        // 페이지 크기 변경
-        function changePageSize(size) {
-            itemsPerPage = parseInt(size);
-            currentPage = 1; // 첫 페이지로 리셋
-            renderTable();
-            showToast(`페이지당 ${size}개 표시`, 'info');
-        }
-
-        // 페이지네이션 렌더링
-        function renderPagination(totalItems) {
-            const container = document.getElementById('pagination');
-            const totalPages = Math.ceil(totalItems / itemsPerPage);
-
-            if (totalPages <= 1) {
-                container.innerHTML = '';
-                return;
-            }
-
-            let html = '';
-
-            // 이전 버튼
-            html += `<button class="pagination-btn" ${currentPage === 1 ? 'disabled' : ''}
-                onclick="goToPage(${currentPage - 1})" aria-label="이전 페이지">◀ 이전</button>`;
-
-            // 페이지 번호
-            const maxVisiblePages = 5;
-            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-
-            if (endPage - startPage < maxVisiblePages - 1) {
-                startPage = Math.max(1, endPage - maxVisiblePages + 1);
-            }
-
-            // 첫 페이지
-            if (startPage > 1) {
-                html += `<button class="pagination-btn" onclick="goToPage(1)" aria-label="첫 페이지">1</button>`;
-                if (startPage > 2) html += `<span class="pagination-info">...</span>`;
-            }
-
-            // 페이지 번호들
-            for (let i = startPage; i <= endPage; i++) {
-                const isActive = i === currentPage;
-                html += `<button class="pagination-btn ${isActive ? 'active' : ''}"
-                    onclick="goToPage(${i})"
-                    aria-label="페이지 ${i}${isActive ? ' (현재 페이지)' : ''}"
-                    ${isActive ? 'aria-current="page"' : ''}>${i}</button>`;
-            }
-
-            // 마지막 페이지
-            if (endPage < totalPages) {
-                if (endPage < totalPages - 1) html += `<span class="pagination-info">...</span>`;
-                html += `<button class="pagination-btn" onclick="goToPage(${totalPages})" aria-label="마지막 페이지">${totalPages}</button>`;
-            }
-
-            // 다음 버튼
-            html += `<button class="pagination-btn" ${currentPage === totalPages ? 'disabled' : ''}
-                onclick="goToPage(${currentPage + 1})" aria-label="다음 페이지">다음 ▶</button>`;
-
-            // 페이지 정보
-            const startItem = (currentPage - 1) * itemsPerPage + 1;
-            const endItem = Math.min(currentPage * itemsPerPage, totalItems);
-            html += `<span class="pagination-info" aria-live="polite">${startItem}-${endItem} / ${totalItems}개</span>`;
-
-            // 페이지 크기 선택
-            html += `<div class="page-size-selector">
-                <label for="page-size">표시:</label>
-                <select id="page-size" onchange="changePageSize(this.value)">
-                    <option value="30" ${itemsPerPage === 30 ? 'selected' : ''}>30개</option>
-                    <option value="50" ${itemsPerPage === 50 ? 'selected' : ''}>50개</option>
-                    <option value="100" ${itemsPerPage === 100 ? 'selected' : ''}>100개</option>
-                </select>
-            </div>`;
-
-            container.innerHTML = html;
-        }
-
-        // 토스트 알림 함수
+        // 토스트
         function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
             toast.textContent = message;
-            toast.setAttribute('role', 'alert');
             container.appendChild(toast);
-
-            // 3초 후 제거
-            setTimeout(() => {
-                toast.remove();
-            }, 3000);
-        }
-
-        // 진행 표시줄 제어
-        function setProgress(percent, show = true) {
-            const bar = document.getElementById('progress-bar');
-            bar.style.display = show ? 'block' : 'none';
-            bar.style.width = `${percent}%`;
-            bar.setAttribute('aria-valuenow', percent);
-        }
-
-        // 필터 초기화 함수
-        function resetFilters() {
-            document.getElementById('filter-market').value = 'all';
-            document.getElementById('filter-rec').value = 'all';
-            document.getElementById('filter-prob').value = '0';
-            document.getElementById('filter-days').value = 'all';
-            currentPage = 1; // 페이지도 리셋
-            renderTable();
-            showToast('필터가 초기화되었습니다', 'info');
-        }
-
-        // 필터 변경 여부 확인
-        function hasActiveFilters() {
-            return document.getElementById('filter-market').value !== 'all' ||
-                   document.getElementById('filter-rec').value !== 'all' ||
-                   parseInt(document.getElementById('filter-prob').value) > 0 ||
-                   document.getElementById('filter-days').value !== 'all';
-        }
-
-        // 필터 리셋 버튼 상태 업데이트
-        function updateResetButton() {
-            const btn = document.getElementById('filter-reset');
-            btn.disabled = !hasActiveFilters();
+            setTimeout(() => toast.remove(), 3000);
         }
 
         // 숫자 포맷
@@ -1179,411 +356,284 @@
 
         // 차트 열기
         function openChart(code) {
-            const url = `https://finance.naver.com/item/fchart.naver?code=${code}`;
-            window.open(url, '_blank');
+            window.open(`https://finance.naver.com/item/fchart.naver?code=${code}`, '_blank');
         }
 
-        // 데이터 로드
-        async function loadData() {
+        // ============================================================
+        // 52주 신고가 탭
+        // ============================================================
+        async function loadData52w() {
             try {
-                setProgress(30, true);
-
                 const response = await fetch('data/ai_screener_results.json');
-                if (!response.ok) throw new Error('데이터를 찾을 수 없습니다');
-
-                setProgress(60, true);
+                if (!response.ok) throw new Error('데이터 없음');
                 const data = await response.json();
-                setProgress(90, true);
+                stocks52w = data.stocks || [];
 
-                allStocks = data.stocks || [];
-
-                // 업데이트 시간 (더 명확하게 표시)
                 if (data.updated_at) {
-                    const updateTime = new Date(data.updated_at.replace(' ', 'T'));
-                    const now = new Date();
-                    const diffMs = now - updateTime;
-                    const diffMins = Math.floor(diffMs / 60000);
-                    const diffHours = Math.floor(diffMins / 60);
-
-                    let timeAgo;
-                    if (diffMins < 1) timeAgo = '방금 전';
-                    else if (diffMins < 60) timeAgo = `${diffMins}분 전`;
-                    else if (diffHours < 24) timeAgo = `${diffHours}시간 전`;
-                    else timeAgo = data.updated_at.split(' ')[0];
-
-                    document.getElementById('updated-at').textContent = `📊 ${data.updated_at} (${timeAgo})`;
-                } else {
-                    document.getElementById('updated-at').textContent = '-';
+                    document.getElementById('updated-at').textContent = `📊 ${data.updated_at}`;
                 }
 
-                // 통계
-                document.getElementById('total-count').textContent = allStocks.length;
-                document.getElementById('buy-count').textContent = allStocks.filter(s => s.recommendation === 'BUY').length;
+                document.getElementById('total-count-52w').textContent = stocks52w.length;
+                document.getElementById('buy-count-52w').textContent = stocks52w.filter(s => s.recommendation === 'BUY').length;
 
-                if (allStocks.length > 0) {
-                    const avgGain = allStocks.reduce((sum, s) => sum + s.predicted_gain, 0) / allStocks.length;
-                    const avgProb = allStocks.reduce((sum, s) => sum + s.success_probability, 0) / allStocks.length;
-                    document.getElementById('avg-gain').textContent = `+${avgGain.toFixed(1)}%`;
-                    document.getElementById('avg-prob').textContent = `${avgProb.toFixed(1)}%`;
+                if (stocks52w.length > 0) {
+                    const avgGain = stocks52w.reduce((sum, s) => sum + s.predicted_gain, 0) / stocks52w.length;
+                    const avgProb = stocks52w.reduce((sum, s) => sum + s.success_probability, 0) / stocks52w.length;
+                    document.getElementById('avg-gain-52w').textContent = `+${avgGain.toFixed(1)}%`;
+                    document.getElementById('avg-prob-52w').textContent = `${avgProb.toFixed(1)}%`;
                 }
 
-                // 모델 정보
-                if (data.model_info) {
-                    document.getElementById('model-info').style.display = 'block';
-                    document.getElementById('model-samples').textContent = data.model_info.samples?.toLocaleString() || '-';
-                    document.getElementById('model-r2').textContent = `${(data.model_info.regressor_r2 * 100).toFixed(1)}%`;
-                    document.getElementById('model-precision').textContent = `${(data.model_info.classifier_precision * 100).toFixed(1)}%`;
-                    document.getElementById('model-trained').textContent = data.model_info.trained_at?.split('T')[0] || '-';
-
-                    // 상단 설명 박스
-                    document.getElementById('model-precision-display').textContent = `${(data.model_info.classifier_precision * 100).toFixed(0)}%`;
-                    document.getElementById('model-samples-display').textContent = data.model_info.samples?.toLocaleString() || '-';
-                }
-
-                setProgress(100, true);
-                renderTable();
-
-                // 로딩 완료 후 진행바 숨기기
-                setTimeout(() => setProgress(0, false), 300);
-                showToast(`${allStocks.length}개 종목 로드 완료`, 'info');
-
-            } catch (error) {
-                setProgress(0, false);
-                document.getElementById('stock-table').innerHTML =
-                    `<tr><td colspan="13" class="no-data">
-                        데이터를 불러올 수 없습니다.<br><br>
-                        터미널에서 다음 명령어를 실행하세요:<br>
-                        <code style="background: rgba(255,255,255,0.1); padding: 8px 16px; border-radius: 4px; display: inline-block; margin-top: 10px;">
-                            python ai_screener.py
-                        </code>
-                    </td></tr>`;
+                renderTable52w();
+                showToast(`52주 신고가: ${stocks52w.length}개 종목 로드`, 'info');
+            } catch (e) {
+                document.getElementById('stock-table-52w').innerHTML = '<tr><td colspan="13" class="no-data">데이터를 불러올 수 없습니다. python ai_screener.py 실행 필요</td></tr>';
             }
         }
 
-        // 테이블 렌더링
-        function renderTable() {
-            const market = document.getElementById('filter-market').value;
-            const rec = document.getElementById('filter-rec').value;
-            const minProb = parseFloat(document.getElementById('filter-prob').value) || 0;
-            const maxDays = document.getElementById('filter-days').value;
+        function sort52w(column) {
+            if (sort52wState.column === column) {
+                sort52wState.direction = sort52wState.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                sort52wState.column = column;
+                sort52wState.direction = ['name', 'days_since_breakout'].includes(column) ? 'asc' : 'desc';
+            }
+            page52w = 1;
+            renderTable52w();
+        }
 
-            let filtered = allStocks.filter(s => {
+        function resetFilters52w() {
+            document.getElementById('filter-market-52w').value = 'all';
+            document.getElementById('filter-rec-52w').value = 'all';
+            document.getElementById('filter-prob-52w').value = '0';
+            page52w = 1;
+            renderTable52w();
+        }
+
+        function renderTable52w() {
+            const market = document.getElementById('filter-market-52w').value;
+            const rec = document.getElementById('filter-rec-52w').value;
+            const minProb = parseFloat(document.getElementById('filter-prob-52w').value) || 0;
+
+            let filtered = stocks52w.filter(s => {
                 if (market !== 'all' && s.market !== market) return false;
                 if (rec !== 'all' && s.recommendation !== rec) return false;
                 if (s.success_probability < minProb) return false;
-                if (maxDays !== 'all' && s.days_since_breakout > parseInt(maxDays)) return false;
                 return true;
             });
 
-            // 필터 결과 개수 업데이트
-            document.getElementById('filter-result-count').innerHTML =
-                `검색 결과: <strong>${filtered.length}</strong>개`;
+            document.getElementById('filter-result-count-52w').innerHTML = `검색 결과: <strong>${filtered.length}</strong>개`;
 
-            // 필터 리셋 버튼 상태 업데이트
-            updateResetButton();
-
-            // 다중 정렬 (페이지네이션 전에 먼저 실행!)
+            // 정렬
             filtered.sort((a, b) => {
-                for (const criteria of sortCriteria) {
-                    let valA = a[criteria.column];
-                    let valB = b[criteria.column];
-
-                    // null 처리
-                    if (valA === null || valA === undefined) valA = criteria.direction === 'asc' ? Infinity : -Infinity;
-                    if (valB === null || valB === undefined) valB = criteria.direction === 'asc' ? Infinity : -Infinity;
-
-                    if (typeof valA === 'string') {
-                        valA = valA.toLowerCase();
-                        valB = (valB || '').toLowerCase();
-                    }
-
-                    let cmp = 0;
-                    if (valA > valB) cmp = 1;
-                    else if (valA < valB) cmp = -1;
-
-                    if (cmp !== 0) {
-                        return criteria.direction === 'asc' ? cmp : -cmp;
-                    }
-                }
-                return 0;
+                let valA = a[sort52wState.column];
+                let valB = b[sort52wState.column];
+                if (valA === null || valA === undefined) valA = sort52wState.direction === 'asc' ? Infinity : -Infinity;
+                if (valB === null || valB === undefined) valB = sort52wState.direction === 'asc' ? Infinity : -Infinity;
+                if (typeof valA === 'string') { valA = valA.toLowerCase(); valB = (valB || '').toLowerCase(); }
+                let cmp = valA > valB ? 1 : valA < valB ? -1 : 0;
+                return sort52wState.direction === 'asc' ? cmp : -cmp;
             });
 
-            // 페이지네이션 적용 (정렬 후에 실행!)
-            const totalItems = filtered.length;
-            const totalPages = Math.ceil(totalItems / itemsPerPage);
+            // 페이지네이션
+            const totalPages = Math.ceil(filtered.length / itemsPerPage);
+            if (page52w > totalPages && totalPages > 0) page52w = totalPages;
+            const start = (page52w - 1) * itemsPerPage;
+            const paged = filtered.slice(start, start + itemsPerPage);
 
-            // 현재 페이지가 총 페이지 수를 초과하면 조정
-            if (currentPage > totalPages && totalPages > 0) {
-                currentPage = totalPages;
-            }
-
-            // 현재 페이지에 해당하는 데이터만 추출
-            const startIndex = (currentPage - 1) * itemsPerPage;
-            const endIndex = startIndex + itemsPerPage;
-            const paginatedData = filtered.slice(startIndex, endIndex);
-
-            // 페이지네이션 UI 렌더링
-            renderPagination(totalItems);
-
-            // 헤더 정렬 표시 및 ARIA 업데이트
-            document.querySelectorAll('th[data-sort]').forEach(th => {
-                const col = th.dataset.sort;
-                const idx = sortCriteria.findIndex(c => c.column === col);
-
-                // 기존 표시 제거
-                const existingIndicator = th.querySelector('.sort-indicator');
-                const existingOrder = th.querySelector('.sort-order');
-                if (existingIndicator) existingIndicator.remove();
-                if (existingOrder) existingOrder.remove();
-
-                if (idx !== -1) {
-                    const direction = sortCriteria[idx].direction;
-                    const arrow = direction === 'asc' ? '▲' : '▼';
-                    const indicator = document.createElement('span');
-                    indicator.className = 'sort-indicator';
-                    indicator.textContent = arrow;
-                    indicator.setAttribute('aria-hidden', 'true');
-                    th.appendChild(indicator);
-
-                    // ARIA 정렬 상태 업데이트
-                    th.setAttribute('aria-sort', direction === 'asc' ? 'ascending' : 'descending');
-
-                    // 다중 정렬시 순서 표시
-                    if (sortCriteria.length > 1) {
-                        const order = document.createElement('span');
-                        order.className = 'sort-order';
-                        order.textContent = `(${idx + 1})`;
-                        order.setAttribute('aria-hidden', 'true');
-                        th.appendChild(order);
-                    }
-                } else {
-                    th.setAttribute('aria-sort', 'none');
-                }
-            });
-
-            // 테이블 생성 - DocumentFragment로 DOM 조작 최적화
-            // 기존: innerHTML 문자열 조합 -> 전체 재파싱 (느림)
-            // 개선: DocumentFragment + createElement -> 단일 리플로우 (약 3배 빠름)
-            const tbody = document.getElementById('stock-table');
-
-            if (filtered.length === 0) {
+            const tbody = document.getElementById('stock-table-52w');
+            if (paged.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="13" class="no-data">조건에 맞는 종목이 없습니다.</td></tr>';
-                document.getElementById('pagination').innerHTML = '';
+                document.getElementById('pagination-52w').innerHTML = '';
                 return;
             }
 
-            // DocumentFragment로 DOM 배치 처리 (리플로우 최소화)
-            const fragment = document.createDocumentFragment();
+            tbody.innerHTML = paged.map(s => {
+                const probClass = s.success_probability >= 60 ? 'prob-high' : s.success_probability >= 50 ? 'prob-medium' : 'prob-low';
+                const recClass = s.recommendation === 'BUY' ? 'rec-buy' : s.recommendation === 'HOLD' ? 'rec-hold' : 'rec-pass';
+                const changePctClass = s.change_pct > 0 ? 'pct-positive' : s.change_pct < 0 ? 'pct-negative' : 'pct-zero';
+                const daysClass = s.days_since_breakout === 0 ? 'days-0' : s.days_since_breakout <= 2 ? 'days-recent' : 'days-old';
+                const daysText = s.days_since_breakout === 0 ? `${s.breakout_date} (오늘)` : `${s.breakout_date} (D+${s.days_since_breakout})`;
 
-            // 행 생성 함수 (클로저로 한 번만 정의)
-            const createRow = (stock) => {
-                const tr = document.createElement('tr');
-                tr.setAttribute('role', 'row');
-
-                const probClass = stock.success_probability >= 60 ? 'prob-high' :
-                                  stock.success_probability >= 50 ? 'prob-medium' : 'prob-low';
-                const recClass = stock.recommendation === 'BUY' ? 'rec-buy' :
-                                 stock.recommendation === 'HOLD' ? 'rec-hold' : 'rec-pass';
-
-                const changePctClass = stock.change_pct > 0 ? 'pct-positive' :
-                                       stock.change_pct < 0 ? 'pct-negative' : 'pct-zero';
-                const breakoutClass = stock.breakout_pct >= 0 ? 'pct-positive' : 'pct-negative';
-                const vsBreakoutClass = stock.vs_breakout_close > 0 ? 'pct-positive' :
-                                        stock.vs_breakout_close < 0 ? 'pct-negative' : 'pct-zero';
-                const gainClass = stock.predicted_gain >= 0 ? 'pct-positive' : 'pct-negative';
-
-                const daysClass = stock.days_since_breakout === 0 ? 'days-0' :
-                                  stock.days_since_breakout <= 2 ? 'days-recent' : 'days-old';
-                const daysText = stock.days_since_breakout === 0
-                    ? `${stock.breakout_date} (오늘)`
-                    : `${stock.breakout_date} (D+${stock.days_since_breakout})`;
-
-                // innerHTML 대신 템플릿 리터럴 + 단일 할당 (문자열 조합 최소화)
-                tr.innerHTML = `
-                    <td>
-                        <span class="stock-name" data-code="${stock.code}">${stock.name}</span>
-                        <span class="market-badge market-${stock.market.toLowerCase()}">${stock.market}</span>
-                        <span class="stock-code">${stock.code}</span>
-                    </td>
-                    <td class="num">${formatNumber(stock.close)}원</td>
-                    <td class="num ${changePctClass}">${stock.change_pct >= 0 ? '+' : ''}${stock.change_pct}%</td>
-                    <td class="num">${formatMarcap(stock.marcap)}</td>
-                    <td class="num ${stock.per ? '' : 'na'}">${stock.per ? stock.per.toFixed(1) : '-'}</td>
-                    <td class="num ${stock.pbr ? '' : 'na'}">${stock.pbr ? stock.pbr.toFixed(2) : '-'}</td>
-                    <td class="num ${breakoutClass}">${stock.breakout_pct >= 0 ? '+' : ''}${stock.breakout_pct}%</td>
-                    <td class="num ${vsBreakoutClass}">${stock.vs_breakout_close >= 0 ? '+' : ''}${stock.vs_breakout_close}%</td>
-                    <td class="num ${stock.breakout_change_pct != null ? (stock.breakout_change_pct >= 0 ? 'positive' : 'negative') : 'na'}">${stock.breakout_change_pct != null ? (stock.breakout_change_pct >= 0 ? '+' : '') + stock.breakout_change_pct + '%' : '-'}</td>
-                    <td class="num ${stock.realized_max_gain != null ? (stock.realized_max_gain >= 10 ? 'positive' : stock.realized_max_gain >= 0 ? '' : 'negative') : 'na'}">${stock.realized_max_gain != null ? (stock.realized_max_gain >= 0 ? '+' : '') + stock.realized_max_gain.toFixed(1) + '%' : '-'}</td>
-                    <td class="num">${stock.volume_surge.toFixed(1)}x</td>
+                return `<tr>
+                    <td><span class="stock-name" onclick="openChart('${s.code}')">${s.name}</span><span class="market-badge market-${s.market.toLowerCase()}">${s.market}</span><span class="stock-code">${s.code}</span></td>
+                    <td class="num">${formatNumber(s.close)}원</td>
+                    <td class="num ${changePctClass}">${s.change_pct >= 0 ? '+' : ''}${s.change_pct}%</td>
+                    <td class="num">${formatMarcap(s.marcap)}</td>
+                    <td class="num ${s.per ? '' : 'na'}">${s.per ? s.per.toFixed(1) : '-'}</td>
+                    <td class="num ${s.pbr ? '' : 'na'}">${s.pbr ? s.pbr.toFixed(2) : '-'}</td>
+                    <td class="num ${s.breakout_pct >= 0 ? 'pct-positive' : 'pct-negative'}">${s.breakout_pct >= 0 ? '+' : ''}${s.breakout_pct}%</td>
+                    <td class="num ${s.vs_breakout_close > 0 ? 'pct-positive' : s.vs_breakout_close < 0 ? 'pct-negative' : ''}">${s.vs_breakout_close >= 0 ? '+' : ''}${s.vs_breakout_close}%</td>
+                    <td class="num">${s.volume_surge.toFixed(1)}x</td>
                     <td><span class="days-badge ${daysClass}">${daysText}</span></td>
-                    <td class="num predicted-gain ${gainClass}">${stock.predicted_gain >= 0 ? '+' : ''}${stock.predicted_gain}%</td>
-                    <td>
-                        <div class="probability-bar ${probClass}">
-                            <div class="probability-fill" style="width: ${stock.success_probability}%"></div>
-                            <span class="probability-text">${stock.success_probability}%</span>
-                        </div>
-                    </td>
-                    <td><span class="recommendation ${recClass}">${stock.recommendation}</span></td>
-                `;
-                return tr;
-            };
+                    <td class="num ${s.predicted_gain >= 0 ? 'pct-positive' : 'pct-negative'}">${s.predicted_gain >= 0 ? '+' : ''}${s.predicted_gain}%</td>
+                    <td><div class="probability-bar ${probClass}"><div class="probability-fill" style="width: ${s.success_probability}%"></div><span class="probability-text">${s.success_probability}%</span></div></td>
+                    <td><span class="recommendation ${recClass}">${s.recommendation}</span></td>
+                </tr>`;
+            }).join('');
 
-            // 페이지네이션 적용된 데이터 렌더링
-            paginatedData.forEach(stock => fragment.appendChild(createRow(stock)));
-            tbody.innerHTML = '';
-            tbody.appendChild(fragment);
+            // 페이지네이션 UI
+            renderPagination('pagination-52w', filtered.length, page52w, (p) => { page52w = p; renderTable52w(); });
         }
 
-        // 이벤트 위임: tbody에서 클릭 이벤트 처리 (개별 onclick 대신)
-        document.getElementById('stock-table').addEventListener('click', (e) => {
-            const stockName = e.target.closest('.stock-name');
-            if (stockName) {
-                const code = stockName.dataset.code;
-                if (code) openChart(code);
-            }
-        });
+        // ============================================================
+        // 박스권 돌파 탭
+        // ============================================================
+        async function loadDataBox() {
+            try {
+                const response = await fetch('data/box_breakout_results.json');
+                if (!response.ok) throw new Error('데이터 없음');
+                const data = await response.json();
+                stocksBox = data.stocks || [];
 
-        // 정렬 핸들러
-        document.querySelectorAll('th[data-sort]').forEach(th => {
-            th.addEventListener('click', (e) => {
-                const col = th.dataset.sort;
+                document.getElementById('total-count-box').textContent = stocksBox.length;
+                document.getElementById('buy-count-box').textContent = stocksBox.filter(s => s.recommendation === 'BUY').length;
 
-                // 클릭 횟수 추적
-                if (!columnClickCount[col]) columnClickCount[col] = 0;
-
-                // 현재 정렬 상태 확인
-                const existingIdx = sortCriteria.findIndex(c => c.column === col);
-
-                if (e.shiftKey) {
-                    // Shift+클릭: 다중 정렬 추가/수정
-                    columnClickCount[col]++;
-
-                    if (existingIdx !== -1) {
-                        // 이미 정렬 중인 컬럼
-                        if (columnClickCount[col] % 3 === 0) {
-                            // 3번째 클릭: 해당 컬럼 정렬 제거
-                            sortCriteria.splice(existingIdx, 1);
-                            columnClickCount[col] = 0;
-                        } else {
-                            // 방향 전환
-                            sortCriteria[existingIdx].direction =
-                                sortCriteria[existingIdx].direction === 'asc' ? 'desc' : 'asc';
-                        }
-                    } else {
-                        // 새 컬럼 추가
-                        const defaultDir = ['name', 'recommendation', 'days_since_breakout'].includes(col) ? 'asc' : 'desc';
-                        sortCriteria.push({column: col, direction: defaultDir});
-                        columnClickCount[col] = 1;
-                    }
-
-                    // 정렬 기준이 모두 제거되면 기본값으로
-                    if (sortCriteria.length === 0) {
-                        sortCriteria = [{column: 'days_since_breakout', direction: 'asc'}];
-                    }
-                } else {
-                    // 일반 클릭: 단일 정렬
-                    if (existingIdx !== -1 && sortCriteria.length === 1) {
-                        // 같은 컬럼 클릭
-                        columnClickCount[col]++;
-
-                        if (columnClickCount[col] % 3 === 0) {
-                            // 3번째 클릭: 기본 정렬로 리셋
-                            sortCriteria = [{column: 'days_since_breakout', direction: 'asc'}];
-                            columnClickCount = {};
-                        } else {
-                            // 방향 전환
-                            sortCriteria[0].direction = sortCriteria[0].direction === 'asc' ? 'desc' : 'asc';
-                        }
-                    } else {
-                        // 다른 컬럼 클릭: 새로운 단일 정렬
-                        const defaultDir = ['name', 'recommendation', 'days_since_breakout'].includes(col) ? 'asc' : 'desc';
-                        sortCriteria = [{column: col, direction: defaultDir}];
-                        columnClickCount = {[col]: 1};
-                    }
+                if (stocksBox.length > 0) {
+                    const avgAi = stocksBox.reduce((sum, s) => sum + s.ai_score, 0) / stocksBox.length;
+                    const avgProb = stocksBox.reduce((sum, s) => sum + s.success_probability, 0) / stocksBox.length;
+                    document.getElementById('avg-ai-box').textContent = avgAi.toFixed(1);
+                    document.getElementById('avg-prob-box').textContent = `${avgProb.toFixed(1)}%`;
                 }
 
-                currentPage = 1; // 정렬 변경 시 1페이지로 리셋
-                renderTable();
-            });
-        });
-
-        // 필터 핸들러 (필터 변경 시 1페이지로 리셋)
-        function onFilterChange() {
-            currentPage = 1;
-            renderTable();
+                renderTableBox();
+                showToast(`박스권 돌파: ${stocksBox.length}개 종목 로드`, 'info');
+            } catch (e) {
+                document.getElementById('stock-table-box').innerHTML = '<tr><td colspan="12" class="no-data">데이터를 불러올 수 없습니다. python box_breakout_screener.py 실행 필요</td></tr>';
+            }
         }
-        document.getElementById('filter-market').addEventListener('change', onFilterChange);
-        document.getElementById('filter-rec').addEventListener('change', onFilterChange);
-        document.getElementById('filter-prob').addEventListener('input', onFilterChange);
-        document.getElementById('filter-days').addEventListener('change', onFilterChange);
 
-        // 필터 초기화 버튼
-        document.getElementById('filter-reset').addEventListener('click', resetFilters);
-
-        // 키보드 단축키
-        document.addEventListener('keydown', (e) => {
-            // 입력 필드에서는 단축키 무시
-            if (e.target.matches('input, select, textarea')) return;
-
-            const hint = document.getElementById('keyboard-hint');
-
-            switch(e.key) {
-                case '?':
-                    e.preventDefault();
-                    hint.classList.toggle('show');
-                    break;
-                case 'Escape':
-                    hint.classList.remove('show');
-                    break;
-                case 'r':
-                case 'R':
-                    if (!e.ctrlKey && !e.metaKey) {
-                        e.preventDefault();
-                        resetFilters();
-                    }
-                    break;
-                case 'f':
-                case 'F':
-                    if (!e.ctrlKey && !e.metaKey) {
-                        e.preventDefault();
-                        document.getElementById('filter-market').focus();
-                        showToast('필터 영역으로 이동', 'info');
-                    }
-                    break;
-                case 't':
-                case 'T':
-                    if (!e.ctrlKey && !e.metaKey) {
-                        e.preventDefault();
-                        document.querySelector('.table-container').focus();
-                        showToast('테이블로 이동', 'info');
-                    }
-                    break;
-                case 'ArrowLeft':
-                    if (currentPage > 1) {
-                        goToPage(currentPage - 1);
-                    }
-                    break;
-                case 'ArrowRight':
-                    const totalPages = Math.ceil(allStocks.length / itemsPerPage);
-                    if (currentPage < totalPages) {
-                        goToPage(currentPage + 1);
-                    }
-                    break;
+        function sortBox(column) {
+            if (sortBoxState.column === column) {
+                sortBoxState.direction = sortBoxState.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortBoxState.column = column;
+                sortBoxState.direction = ['name', 'days_since_breakout'].includes(column) ? 'asc' : 'desc';
             }
-        });
+            pageBox = 1;
+            renderTableBox();
+        }
 
-        // 테이블 헤더 키보드 접근성 (Enter/Space로 정렬)
-        document.querySelectorAll('th[data-sort]').forEach(th => {
-            th.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    th.click();
-                }
+        function resetFiltersBox() {
+            document.getElementById('filter-market-box').value = 'all';
+            document.getElementById('filter-rec-box').value = 'all';
+            document.getElementById('filter-ai-box').value = '0';
+            pageBox = 1;
+            renderTableBox();
+        }
+
+        function renderTableBox() {
+            const market = document.getElementById('filter-market-box').value;
+            const rec = document.getElementById('filter-rec-box').value;
+            const minAi = parseFloat(document.getElementById('filter-ai-box').value) || 0;
+
+            let filtered = stocksBox.filter(s => {
+                if (market !== 'all' && s.market !== market) return false;
+                if (rec !== 'all' && s.recommendation !== rec) return false;
+                if (s.ai_score < minAi) return false;
+                return true;
             });
-        });
+
+            document.getElementById('filter-result-count-box').innerHTML = `검색 결과: <strong>${filtered.length}</strong>개`;
+
+            // 정렬
+            filtered.sort((a, b) => {
+                let valA = a[sortBoxState.column];
+                let valB = b[sortBoxState.column];
+                if (valA === null || valA === undefined) valA = sortBoxState.direction === 'asc' ? Infinity : -Infinity;
+                if (valB === null || valB === undefined) valB = sortBoxState.direction === 'asc' ? Infinity : -Infinity;
+                if (typeof valA === 'string') { valA = valA.toLowerCase(); valB = (valB || '').toLowerCase(); }
+                let cmp = valA > valB ? 1 : valA < valB ? -1 : 0;
+                return sortBoxState.direction === 'asc' ? cmp : -cmp;
+            });
+
+            // 페이지네이션
+            const totalPages = Math.ceil(filtered.length / itemsPerPage);
+            if (pageBox > totalPages && totalPages > 0) pageBox = totalPages;
+            const start = (pageBox - 1) * itemsPerPage;
+            const paged = filtered.slice(start, start + itemsPerPage);
+
+            const tbody = document.getElementById('stock-table-box');
+            if (paged.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="12" class="no-data">조건에 맞는 종목이 없습니다.</td></tr>';
+                document.getElementById('pagination-box').innerHTML = '';
+                return;
+            }
+
+            tbody.innerHTML = paged.map(s => {
+                const probClass = s.success_probability >= 60 ? 'prob-high' : s.success_probability >= 50 ? 'prob-medium' : 'prob-low';
+                const recClass = s.recommendation === 'BUY' ? 'rec-buy' : s.recommendation === 'HOLD' ? 'rec-hold' : 'rec-pass';
+                const changePctClass = s.change_pct > 0 ? 'pct-positive' : s.change_pct < 0 ? 'pct-negative' : 'pct-zero';
+                const gainClass = s.gain_since_breakout > 0 ? 'pct-positive' : s.gain_since_breakout < 0 ? 'pct-negative' : '';
+                const daysClass = s.days_since_breakout === 0 ? 'days-0' : s.days_since_breakout <= 2 ? 'days-recent' : 'days-old';
+                const daysText = s.days_since_breakout === 0 ? `${s.breakout_date} (오늘)` : `${s.breakout_date} (D+${s.days_since_breakout})`;
+
+                return `<tr>
+                    <td><span class="stock-name" onclick="openChart('${s.code}')">${s.name}</span><span class="market-badge market-${s.market.toLowerCase()}">${s.market}</span><span class="stock-code">${s.code}</span></td>
+                    <td class="num">${formatNumber(s.close)}원</td>
+                    <td class="num ${changePctClass}">${s.change_pct >= 0 ? '+' : ''}${s.change_pct}%</td>
+                    <td class="num">${formatMarcap(s.marcap)}</td>
+                    <td class="num ${s.per ? '' : 'na'}">${s.per ? s.per.toFixed(1) : '-'}</td>
+                    <td class="num ${s.pbr ? '' : 'na'}">${s.pbr ? s.pbr.toFixed(2) : '-'}</td>
+                    <td class="num" style="font-weight:700; color:#c084fc;">${s.ai_score.toFixed(1)}</td>
+                    <td><div class="probability-bar ${probClass}"><div class="probability-fill" style="width: ${s.success_probability}%"></div><span class="probability-text">${s.success_probability}%</span></div></td>
+                    <td class="num ${s.predicted_gain >= 0 ? 'pct-positive' : 'pct-negative'}">${s.predicted_gain >= 0 ? '+' : ''}${s.predicted_gain}%</td>
+                    <td><span class="days-badge ${daysClass}">${daysText}</span></td>
+                    <td class="num ${gainClass}">${s.gain_since_breakout >= 0 ? '+' : ''}${s.gain_since_breakout}%</td>
+                    <td><span class="recommendation ${recClass}">${s.recommendation}</span></td>
+                </tr>`;
+            }).join('');
+
+            renderPagination('pagination-box', filtered.length, pageBox, (p) => { pageBox = p; renderTableBox(); });
+        }
+
+        // ============================================================
+        // 페이지네이션 공통
+        // ============================================================
+        function renderPagination(containerId, totalItems, currentPage, onPageChange) {
+            const container = document.getElementById(containerId);
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+            if (totalPages <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+
+            let html = `<button class="pagination-btn" ${currentPage === 1 ? 'disabled' : ''} onclick="arguments[0].stopPropagation()">◀ 이전</button>`;
+
+            const maxVisible = 5;
+            let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+            let end = Math.min(totalPages, start + maxVisible - 1);
+            if (end - start < maxVisible - 1) start = Math.max(1, end - maxVisible + 1);
+
+            if (start > 1) html += `<button class="pagination-btn">1</button>`;
+            if (start > 2) html += `<span class="pagination-info">...</span>`;
+
+            for (let i = start; i <= end; i++) {
+                html += `<button class="pagination-btn ${i === currentPage ? 'active' : ''}">${i}</button>`;
+            }
+
+            if (end < totalPages - 1) html += `<span class="pagination-info">...</span>`;
+            if (end < totalPages) html += `<button class="pagination-btn">${totalPages}</button>`;
+
+            html += `<button class="pagination-btn" ${currentPage === totalPages ? 'disabled' : ''}>다음 ▶</button>`;
+            html += `<span class="pagination-info">${(currentPage-1)*itemsPerPage+1}-${Math.min(currentPage*itemsPerPage, totalItems)} / ${totalItems}개</span>`;
+
+            container.innerHTML = html;
+
+            // 이벤트 바인딩
+            container.querySelectorAll('.pagination-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const text = btn.textContent.trim();
+                    if (text === '◀ 이전' && currentPage > 1) onPageChange(currentPage - 1);
+                    else if (text === '다음 ▶' && currentPage < totalPages) onPageChange(currentPage + 1);
+                    else if (!isNaN(parseInt(text))) onPageChange(parseInt(text));
+                });
+            });
+        }
 
         // 초기 로드
-        loadData();
+        loadData52w();
+        loadDataBox();
     </script>
 </body>
 </html>
