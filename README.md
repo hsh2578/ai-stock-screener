@@ -1,5 +1,7 @@
 # AI 종목 발굴 시스템
 
+### ▶ **[바로 보기 — hsh2578.github.io/ai-stock-screener](https://hsh2578.github.io/ai-stock-screener/)**
+
 52주 신고가 돌파 종목을 자동으로 발굴하고, 머신러닝 모델로 수익률을 예측하는 시스템입니다.
 
 ## 주요 기능
