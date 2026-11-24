@@ -139,7 +139,7 @@
                     <div class="sub">52주 신고가 돌파</div>
                 </div>
                 <div class="stat-card">
-                    <div class="label">BUY 추천</div>
+                    <div class="label">BUY 등급</div>
                     <div class="value" id="buy-count-52w">-</div>
                     <div class="sub">성공확률 60%+ & 예상수익 10%+</div>
                 </div>
@@ -170,7 +170,7 @@
                     </select>
                 </div>
                 <div class="filter-group">
-                    <label>추천:</label>
+                    <label>모델 등급:</label>
                     <select id="filter-rec-52w" onchange="renderTable52w()">
                         <option value="all">전체</option>
                         <option value="BUY">BUY</option>
@@ -202,7 +202,7 @@
                             <th data-sort="days_since_breakout" onclick="sort52w('days_since_breakout')">돌파일<span class="sort-indicator">▲</span></th>
                             <th data-sort="predicted_gain" onclick="sort52w('predicted_gain')">예상수익</th>
                             <th data-sort="success_probability" onclick="sort52w('success_probability')">성공확률</th>
-                            <th data-sort="recommendation" onclick="sort52w('recommendation')">추천</th>
+                            <th data-sort="recommendation" onclick="sort52w('recommendation')">모델 등급</th>
                         </tr>
                     </thead>
                     <tbody id="stock-table-52w">
@@ -222,7 +222,7 @@
                     <div class="sub">박스권 돌파</div>
                 </div>
                 <div class="stat-card">
-                    <div class="label">BUY 추천</div>
+                    <div class="label">BUY 등급</div>
                     <div class="value" id="buy-count-box">-</div>
                     <div class="sub">성공확률 60%+ & 예상수익 10%+</div>
                 </div>
@@ -254,7 +254,7 @@
                     </select>
                 </div>
                 <div class="filter-group">
-                    <label>추천:</label>
+                    <label>모델 등급:</label>
                     <select id="filter-rec-box" onchange="renderTableBox()">
                         <option value="all">전체</option>
                         <option value="BUY">BUY</option>
@@ -285,7 +285,7 @@
                             <th data-sort="predicted_gain" onclick="sortBox('predicted_gain')">예상수익</th>
                             <th data-sort="days_since_breakout" onclick="sortBox('days_since_breakout')">돌파일</th>
                             <th data-sort="gain_since_breakout" onclick="sortBox('gain_since_breakout')">돌파후등락</th>
-                            <th data-sort="recommendation" onclick="sortBox('recommendation')">추천</th>
+                            <th data-sort="recommendation" onclick="sortBox('recommendation')">모델 등급</th>
                         </tr>
                     </thead>
                     <tbody id="stock-table-box">
@@ -298,7 +298,8 @@
     </main>
 
     <footer class="footer">
-        AI 종목 발굴 시스템 | ML 기반 머신러닝 예측
+        AI 종목 발굴 시스템 | ML 기반 머신러닝 예측<br>
+        BUY·HOLD·PASS는 과거 데이터로 학습한 모델의 출력 분류이며 투자 권유나 매매 추천이 아닙니다. 미래 수익을 보장하지 않고, 투자 판단과 책임은 이용자 본인에게 있습니다.
     </footer>
 
     <script>
